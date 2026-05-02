@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Multi-Role Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2a5298;
+            --secondary: #1e3c72;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url(v1.jpg) no-repeat center center/cover;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 60, 114, 0.6);
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 400px;
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #msg {
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+        
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Portal Login</h2>
+
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Enter Email">
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Enter Password">
+        </div>
+
+        <div class="input-group">
+            <select id="role">
+                <option value="admin">Admin</option>
+                <option value="hod">HOD</option>
+                <option value="faculty">Faculty</option>
+                <option value="student">Student</option>
+            </select>
+        </div>
+
+        <button onclick="handleAuth()">Login</button>
+
+        <div id="msg"></div>
+    </div>
+
+    <script>
+    
+async function handleAuth() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const role = document.getElementById("role").value;
+    const msg = document.getElementById("msg");
+
+    if (!username || !password) {
+        msg.innerHTML = "<span class='error'>Enter all fields</span>";
+        return;
+    }
+
+    try {
+        const res = await fetch("http://localhost:3000/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password, role })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            msg.innerHTML = "<span class='success'>Login Success</span>";
+
+            setTimeout(() => {
+                const pages = {
+                    admin: "admin.html",
+                    hod: "hod.html",
+                    faculty: "faculty.html",
+                    student: "student.html"
+                };
+
+                window.location.href = pages[role];
+            }, 1000);
+
+        } else {
+            msg.innerHTML = "<span class='error'>Invalid login</span>";
+        }
+
+    } catch (err) {
+        msg.innerHTML = "<span class='error'>Server not working</span>";
+    }
+}
+
+</script>
+</body>
+
+</html>

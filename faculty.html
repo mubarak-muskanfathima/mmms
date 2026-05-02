@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Portal | Section-wise Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: var(--bg);
+        }
+
+        .navbar {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1a252f;
+            color: white;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar li {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            transition: 0.3s;
+        }
+
+        .sidebar li.active {
+            background: #2c3e50;
+            border-left-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .main {
+            flex: 1;
+            padding: 25px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.4s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .section-bar {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        select,
+        textarea {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-download {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .btn-add {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-send {
+            background: var(--success);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .msg-item {
+            padding: 15px;
+            border-left: 4px solid var(--accent);
+            background: #ebf5fb;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        /* Student Msg Style */
+        .student-msg {
+            border-left-color: var(--success);
+            background: #f4fff8;
+        }
+
+        #chart-wrap {
+            max-width: 450px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <h2>Faculty Hub</h2>
+        <span>Prof. Meera | Computer Science</span>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <ul>
+                <li class="active" onclick="showPage('marks', this)">Student Marks</li>
+                <li onclick="showPage('analysis', this)">Analysis</li>
+                <li onclick="showPage('notify', this)">Send Notification</li>
+                <li onclick="showPage('messages', this)">HOD Messages</li>
+                <li onclick="logout()">Logout</li>
+            </ul>
+        </div>
+
+        <div class="main">
+            <div id="page-marks" class="page active">
+                <div class="section-bar">
+                    <label>Select Section:</label>
+                    <select id="section-select" onchange="renderTable()">
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                    </select>
+                    <button class="btn btn-download" onclick="downloadReport()">📥 Download Report</button>
+                </div>
+
+                <div class="card">
+                    <h3>Enter Marks for Section <span id="current-sec-label">A</span></h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="text" id="s-name" placeholder="Student Name"
+                            style="flex:1; padding:8px; border:1px solid #ddd;">
+                        <input type="number" id="s-marks" placeholder="Marks"
+                            style="width:100px; padding:8px; border:1px solid #ddd;">
+                        <button class="btn btn-add" onclick="addStudent()">Add</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Roll #</th>
+                                <th>Name</th>
+                                <th>Marks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-notify" class="page">
+                <h2>Broadcast to Students</h2>
+                <div class="card">
+                    <h3>New Message for Section <span id="notif-sec-label">A</span></h3>
+                    <textarea id="student-msg-body" style="width:100%; height:120px;"
+                        placeholder="Type your announcement here..."></textarea>
+                    <button class="btn btn-send" onclick="sendNotification()">Send Announcement</button>
+                </div>
+
+                <h3>Recently Sent Announcements</h3>
+                <div id="sent-notifications-log">
+                </div>
+            </div>
+
+            <div id="page-analysis" class="page">
+                <h2>Class Performance Analysis</h2>
+                <div class="card">
+                    <div id="chart-wrap">
+                        <canvas id="analysisChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-messages" class="page">
+                <h2>Notifications from HOD/Admin</h2>
+                <div id="message-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const role1 = localStorage.getItem("role");
+        let dataStore = {
+            "A": [{ name: "Rahul Sharma", marks: 45 }, { name: "Sneha Reddy", marks: 22 }],
+            "B": [{ name: "Amit Kumar", marks: 38 }],
+            "C": [{ name: "Priya V", marks: 41 }]
+        };
+
+        const notifications = [
+            { from: "HOD - Prof. Rakesh", text: "Please ensure Section B marks are uploaded by tomorrow.", date: "12 Apr, 2026" },
+            { from: "Admin", text: "System update scheduled for tonight. Save your drafts.", date: "11 Apr, 2026" }
+        ];
+
+        let facultySentBox = [];
+
+        function logout() {
+            if (confirm("Are you sure you want to logout?")) {
+                window.location.href = "login.html"; // Redirects to your login page
+            }
+        }
+        async function submitMarks() {
+            const studentName = document.getElementById('sNameSelect').value;
+            const subject = document.getElementById('subjectInput').value;
+            const m1 = document.getElementById('m1Input').value;
+            const m2 = document.getElementById('m2Input').value;
+
+            const payload = {
+                username: studentName,
+                subject: subject,
+                mid1: m1,
+                mid2: m2
+            };
+
+            const response = await fetch("http://localhost:3000/faculty/submit-marks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            alert(result.msg);
+            location.reload(); // Refresh to see updated list
+        }
+        async function testSubmit() {
+            const testData = {
+                username: "Rahul",      // Must match the name in Compass exactly
+                subject: "Mathematics",
+                mid1: 25,
+                mid2: 22
+            };
+
+            console.log("Sending data...");
+
+            const response = await fetch("http://localhost:3000/faculty/submit-marks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(testData)
+            });
+
+            const result = await response.json();
+            console.log("Server Response:", result.msg);
+            alert(result.msg);
+        }
+
+        function showPage(pageId, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+            el.classList.add('active');
+
+            if (pageId === 'analysis') initAnalysis();
+            if (pageId === 'messages') loadMessages();
+            if (pageId === 'notify') {
+                document.getElementById('notif-sec-label').innerText = document.getElementById('section-select').value;
+                renderFacultyLog();
+            }
+        }
+        async function addHOD() {
+    const name = document.getElementById('hName').value;
+    const dept = document.getElementById('hDept').value;
+
+    const res = await fetch("http://localhost:3000/admin/add-hod", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: name,   // ✅ FIXED
+            dept: dept
+        })
+    });
+
+    const data = await res.json();
+    alert(data.msg);
+
+    refreshUI();
+}
+async function addFaculty() {
+    const name = document.getElementById('fName').value;
+    const dept = document.getElementById('fDept').value;
+    const subject = document.getElementById('fSubject').value;
+    const desig = document.getElementById('fDesignation').value;
+
+    const res = await fetch("http://localhost:3000/admin/add-faculty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: name,   // ✅ FIXED
+            dept: dept,
+            subject: subject,
+            desig: desig
+        })
+    });
+
+    const data = await res.json();
+    alert(data.msg);
+
+    refreshUI();
+}
+
+        // Send message to students
+        function sendNotification() {
+            const sec = document.getElementById('section-select').value;
+            const msg = document.getElementById('student-msg-body').value;
+
+            if (msg.trim() === "") {
+                alert("Please enter a message.");
+                return;
+            }
+
+            facultySentBox.unshift({
+                section: sec,
+                text: msg,
+                date: new Date().toLocaleString()
+            });
+
+            document.getElementById('student-msg-body').value = '';
+            renderFacultyLog();
+            alert("Announcement sent to Section " + sec);
+        }
+
+        function renderFacultyLog() {
+            const log = document.getElementById('sent-notifications-log');
+            log.innerHTML = facultySentBox.map(m => `
+                <div class="msg-item student-msg">
+                    <strong>To Section: ${m.section}</strong>
+                    <p>${m.text}</p>
+                    <small>${m.date}</small>
+                </div>
+            `).join('');
+        }
+
+        async function renderTable() {
+            const sec = document.getElementById('section-select').value;
+            document.getElementById('current-sec-label').innerText = sec;
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const res = await fetch(`http://localhost:3000/faculty/students/${sec}`);
+            const students = await res.json();
+
+            let index = 0;
+
+            students.forEach(s => {
+                let marks = "0";
+
+                // ✅ Get latest mark
+                if (s.marks && s.marks.length > 0) {
+                    const latest = s.marks[s.marks.length - 1];
+                    marks = latest.mid1;
+                }
+
+                tbody.innerHTML += `
+        <tr>
+            <td>${sec}-${100 + index++}</td>
+            <td>${s.username}</td>
+            <td><b>${marks}</b></td>
+            <td>
+                <button onclick="deleteStudent('${s.username}')"
+                style="color:red; background:none; border:none; cursor:pointer;">
+                Remove
+                </button>
+            </td>
+        </tr>
+        `;
+            });
+        }
+        async function addStudent() {
+            const sec = document.getElementById('section-select').value;
+            const name = document.getElementById('s-name').value.trim();
+            const marksVal = document.getElementById('s-marks').value;
+
+            if (!name || !marksVal) {
+                alert("Please enter Name and Marks!");
+                return;
+            }
+
+            try {
+                // 🔹 STEP 1: Try creating user
+                const userRes = await fetch("http://localhost:3000/admin/add-user", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: name,
+                        dept: "CSE",
+                        role: "student",
+                        password: "123",
+                        section: sec
+                    })
+                });
+
+                // If user already exists → ignore
+                if (!userRes.ok) {
+                    const text = await userRes.text(); // avoid JSON crash
+                    console.log("User creation skipped:", text);
+                }
+
+                // 🔹 STEP 2: Add marks (always runs)
+                const marksRes = await fetch("http://localhost:3000/faculty/submit-marks", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: name,
+                        subject: "Overall",
+                        mid1: Number(marksVal),
+                        mid2: 0
+                    })
+                });
+
+                // Handle server error safely
+                if (!marksRes.ok) {
+                    const errText = await marksRes.text();
+                    console.error("Marks error:", errText);
+                    alert("Failed to add marks!");
+                    return;
+                }
+
+                const result = await marksRes.json();
+                alert(result.msg || "Marks added successfully ✅");
+
+                // 🔹 STEP 3: Refresh table from DB
+                await renderTable();
+
+                // 🔹 STEP 4: Clear inputs
+                document.getElementById('s-name').value = '';
+                document.getElementById('s-marks').value = '';
+
+            } catch (err) {
+                console.error("FULL ERROR:", err);
+                alert("Error: " + err.message);
+            }
+        }
+        function removeStudent(sec, index) {
+            dataStore[sec].splice(index, 1);
+            renderTable();
+        }
+
+        function loadMessages() {
+            const container = document.getElementById('message-container');
+            container.innerHTML = notifications.map(n => `
+            <div class="msg-item">
+                <strong>From: ${n.from}</strong>
+                <p>${n.text}</p>
+                <small>${n.date}</small>
+            </div>
+        `).join('');
+        }
+
+        let myChart = null;
+        async function initAnalysis() {
+            const sec = document.getElementById('section-select').value;
+
+            const res = await fetch(`http://localhost:3000/faculty/students/${sec}`);
+            const students = await res.json();
+
+            let pass = 0, fail = 0;
+
+            students.forEach(s => {
+                if (s.marks && s.marks.length > 0) {
+                    const m = s.marks[s.marks.length - 1].mid1;
+
+                    if (m >= 25) pass++;
+                    else fail++;
+                }
+            });
+
+            const ctx = document.getElementById('analysisChart').getContext('2d');
+
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Pass', 'Fail'],
+                    datasets: [{
+                        data: [pass, fail],
+                        backgroundColor: ['#27ae60', '#e74c3c']
+                    }]
+                }
+            });
+        }
+        async function deleteStudent(username) {
+            await fetch(`http://localhost:3000/admin/delete-user/${username}`, {
+                method: "DELETE"
+            });
+
+            renderTable();
+        }
+        function downloadReport() {
+            const sec = document.getElementById('section-select').value;
+            let csv = "Roll No,Name,Marks,Result\n";
+            dataStore[sec].forEach((s, i) => {
+                csv += `${sec}-${100 + i},${s.name},${s.marks},${s.marks >= 25 ? 'Pass' : 'Fail'}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Section_${sec}_Report.csv`;
+            a.click();
+        }
+
+        renderTable();
+    </script>
+</body>
+
+</html>

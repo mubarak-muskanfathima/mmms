@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Student System</title>
+</head>
+<body>
+
+<h2>Login</h2>
+<input id="user" placeholder="Username">
+<input id="pass" placeholder="Password" type="password">
+<button onclick="login()">Login</button>
+
+<hr>
+
+<h2>Attendance</h2>
+<input id="name" placeholder="Subject">
+<input id="val" placeholder="%">
+<button onclick="addAttendance()">Add</button>
+
+<div id="attendance"></div>
+
+<hr>
+
+<h2>Marks</h2>
+<input id="sub" placeholder="Subject">
+<input id="m1" placeholder="Mid1">
+<input id="m2" placeholder="Mid2">
+<button onclick="addMarks()">Add</button>
+
+<div id="marks"></div>
+
+<script>
+
+// LOGIN
+function login(){
+fetch("http://localhost:3000/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:user.value,
+password:pass.value
+})
+})
+.then(res=>res.json())
+.then(d=>{
+if(d.success) alert("Login Success");
+else alert("Invalid");
+});
+}
+
+// ATTENDANCE
+function loadAttendance(){
+fetch("http://localhost:3000/attendance")
+.then(res=>res.json())
+.then(data=>{
+attendance.innerHTML = data.map(x=>`
+<div>
+${x.name} (${x.val}%)
+<button onclick="del(${x.id})">❌</button>
+<button onclick="upd(${x.id})">✏️</button>
+</div>
+`).join('');
+});
+}
+
+function addAttendance(){
+fetch("http://localhost:3000/attendance",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name:name.value,val:val.value})
+}).then(()=>loadAttendance());
+}
+
+function del(id){
+fetch(`http://localhost:3000/attendance/${id}`,{
+method:"DELETE"
+}).then(()=>loadAttendance());
+}
+
+function upd(id){
+let n=prompt("Name");
+let v=prompt("Value");
+fetch(`http://localhost:3000/attendance/${id}`,{
+method:"PUT",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name:n,val:v})
+}).then(()=>loadAttendance());
+}
+
+// MARKS
+function loadMarks(){
+fetch("http://localhost:3000/marks")
+.then(res=>res.json())
+.then(data=>{
+marks.innerHTML = data.map(x=>`
+<div>${x.subject} - ${x.m1}, ${x.m2}</div>
+`).join('');
+});
+}
+
+function addMarks(){
+fetch("http://localhost:3000/marks",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+subject:sub.value,
+m1:m1.value,
+m2:m2.value
+})
+}).then(()=>loadMarks());
+}
+
+// INITIAL LOAD
+loadAttendance();
+loadMarks();
+
+</script>
+
+</body>
+</html>

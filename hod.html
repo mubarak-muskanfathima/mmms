@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOD Dashboard | Student Mid Marks Management Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #1abc9c;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #3498db;
+            --light: #ecf0f1;
+        }
+
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: #f4f7f6; color: #333; }
+        
+        /* Navbar */
+        .navbar { 
+            background-color: var(--primary); 
+            color: #fff; 
+            padding: 15px 25px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Layout */
+        .container { display: flex; min-height: 100vh; }
+        
+        .sidebar { 
+            background-color: var(--secondary); 
+            color: #fff; 
+            width: 240px; 
+            padding: 20px 0; 
+        }
+
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li { 
+            padding: 15px 25px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            border-left: 4px solid transparent;
+        }
+        .sidebar li:hover, .sidebar li.active { 
+            background-color: #2c3e50; 
+            border-left: 4px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+
+        /* Components */
+        .page { display: none; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card-row { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card { 
+            background: white; padding: 20px; border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); flex: 1; text-align: center; 
+        }
+        .card h3 { margin: 0; color: var(--secondary); font-size: 1rem; }
+        .card p { font-size: 2rem; font-weight: bold; margin: 10px 0 0; color: var(--accent); }
+
+        .form-group { 
+            background: white; padding: 20px; border-radius: 8px; 
+            margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
+
+        input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { width: 100%; resize: vertical; margin-bottom: 10px; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background-color: #f8f9fa; color: var(--secondary); text-transform: uppercase; font-size: 0.85rem; }
+
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; color: white; font-weight: bold; }
+        .bg-submitted { background-color: var(--success); }
+        .bg-pending { background-color: var(--warning); }
+        .bg-rejected { background-color: var(--danger); }
+        .bg-info { background-color: var(--info); }
+
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-add { background-color: var(--accent); color: white; }
+        .btn-approve { background-color: var(--success); color: white; }
+        .btn-reject { background-color: var(--danger); color: white; }
+        .btn-delete { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-send { background-color: var(--info); color: white; width: 100%; margin-top: 10px; }
+
+        #chart-container { max-width: 450px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; }
+        
+        .notification-item { 
+            background: #fdfdfd; border-left: 4px solid var(--info); 
+            padding: 15px; margin-bottom: 10px; border-radius: 4px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        #toast {
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary);
+            color: white; padding: 12px 25px; border-radius: 5px; display: none; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>HOD Core Dashboard</h1>
+    <div>
+        <strong>Prof. Rakesh Nair</strong> | <small>HOD - CSE Department</small>
+    </div>
+</div>
+
+<div class="container">
+    <div class="sidebar">
+        <ul>
+            <li class="active" onclick="showPage('dashboard', this)">Dashboard</li>
+            <li onclick="showPage('faculty', this)">Manage Faculty</li>
+            <li onclick="showPage('students', this)">Manage Students</li>
+            <li onclick="showPage('notifications', this)">Communication Center</li>
+            <li onclick="showPage('submissions', this)">Submissions</li>
+            <li onclick="showPage('reports', this)">Reports & Analytics</li>
+            <li onclick="logout()">Logout</li>
+        </ul>
+    </div>
+
+    <div class="main">
+        <div id="page-dashboard" class="page active">
+            <h2>System Overview</h2>
+            <div class="card-row">
+                <div class="card"><h3>Total Students</h3><p id="stat-students">0</p></div>
+                <div class="card"><h3>Active Faculty</h3><p id="stat-faculty">0</p></div>
+                <div class="card"><h3>Pending Sets</h3><p id="stat-pending">0</p></div>
+            </div>
+            <h3>Faculty Submission Status</h3>
+            <table id="dash-table">
+                <thead><tr><th>Faculty</th><th>Subject</th><th>Status</th></tr></thead>
+                <tbody id="dash-body"></tbody>
+            </table>
+        </div>
+
+        <div id="page-faculty" class="page">
+            <h2>Faculty Management</h2>
+            <div class="form-group">
+                <div class="input-row">
+                    <input type="text" id="fac-name" placeholder="Faculty Name">
+                    <input type="text" id="fac-sub" placeholder="Subject Handle">
+                    <button class="btn btn-add" onclick="addFaculty()">Add Faculty</button>
+                </div>
+            </div>
+            <table>
+                <thead><tr><th>Name</th><th>Subject</th><th>Action</th></tr></thead>
+                <tbody id="faculty-list"></tbody>
+            </table>
+        </div>
+
+        <div id="page-students" class="page">
+            <h2>Student Management</h2>
+            <div class="form-group">
+                <div class="input-row">
+                    <select id="stud-section">
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                    </select>
+                    <input type="text" id="stud-name" placeholder="Student Name">
+                    <input type="number" id="stud-marks" placeholder="Marks (Max 50)">
+                    <button class="btn btn-add" onclick="addStudent()">Add to Section</button>
+                </div>
+            </div>
+            <div class="input-row" style="justify-content: flex-end;">
+                <label>Filter View: </label>
+                <select id="view-section-filter" onchange="renderAll()">
+                    <option value="All">All Sections</option>
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                </select>
+            </div>
+            <table>
+                <thead><tr><th>Name</th><th>Section</th><th>Marks</th><th>Action</th></tr></thead>
+                <tbody id="student-list"></tbody>
+            </table>
+        </div>
+
+        <div id="page-notifications" class="page">
+            <h2>Send Notifications</h2>
+            <div class="form-group">
+                <label>Target Audience:</label>
+                <select id="notif-target" style="width: 100%; margin-bottom: 10px;">
+                    <option value="Faculty">All Faculty</option>
+                    <option value="Students">All Students</option>
+                    <option value="Everyone">Everyone</option>
+                </select>
+                <label>Message Content:</label>
+                <textarea id="notif-content" rows="4" placeholder="Type your message here..."></textarea>
+                <button class="btn btn-send" onclick="sendBroadcast()">Send Broadcast Alert</button>
+            </div>
+            <h3>Sent Notifications History</h3>
+            <div id="notif-history"></div>
+        </div>
+
+        <div id="page-submissions" class="page">
+            <h2>Review Submissions</h2>
+            <table>
+                <thead><tr><th>Faculty</th><th>Subject</th><th>Action</th></tr></thead>
+                <tbody id="submission-list"></tbody>
+            </table>
+        </div>
+
+        <div id="page-reports" class="page">
+            <div style="display:flex; justify-content: space-between; align-items:center;">
+                <h2>Analytics</h2>
+                <button class="btn btn-approve" onclick="downloadCSV()">Download Full CSV</button>
+            </div>
+            <div id="chart-container"><canvas id="passChart"></canvas></div>
+            <table>
+                <thead><tr><th>Student</th><th>Sec</th><th>Marks</th><th>Status</th></tr></thead>
+                <tbody id="report-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const role1 = localStorage.getItem("role");
+    // --- Data Store ---
+    let faculty = [
+        { id: 1, name: "Meera", subject: "Data Structures", status: "Submitted" },
+        { id: 2, name: "Pradeep", subject: "Operating Systems", status: "Pending" }
+    ];
+
+    let students = [
+        { id: 1, name: "Rahul Sharma", section: "A", marks: 45 },
+        { id: 2, name: "Anjali Devi", section: "B", marks: 18 },
+        { id: 3, name: "Arjun Kumar", section: "A", marks: 32 }
+    ];
+
+    let broadcasts = [];
+    let archive = [];
+
+    // --- Navigation ---
+    function showPage(pageId, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+        el.classList.add('active');
+        if(pageId === 'reports') updateChart();
+        renderAll();
+    }
+
+    // --- Logic: Faculty ---
+    async function addFaculty() {
+    const name = document.getElementById('fac-name').value;
+    const subject = document.getElementById('fac-sub').value;
+
+    if (!name || !subject) {
+        alert("Enter all fields");
+        return;
+    }
+
+    const res = await fetch("http://localhost:3000/admin/add-faculty", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+    name: name,
+    dept: "CSE",
+    subject: subject,
+    desig: "Professor"
+})
+    });
+
+    const data = await res.json();
+    alert(data.msg);
+
+    loadFaculty(); // refresh
+}
+async function loadFaculty() {
+    const res = await fetch("http://localhost:3000/faculty");
+    const faculty = await res.json();
+
+    document.getElementById('faculty-list').innerHTML =
+        faculty.map(f => `
+            <tr>
+                <td>${f.username}</td>
+                <td>${f.subject || "-"}</td>
+                <td>
+                    <button onclick="deleteUser('${f._id}')">Delete</button>
+                </td>
+            </tr>
+        `).join("");
+}
+    
+
+fetch("http://localhost:3000/marks", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        subject: sub.value,
+        m1: m1.value,
+        m2: m2.value,
+        role: role
+    })
+});
+const role = localStorage.getItem("role");
+
+fetch("http://localhost:3000/attendance", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        name: subName.value,
+        val: subVal.value,
+        role: role
+    })
+});
+
+    // --- Logic: Students ---
+    
+    async function addStudent() {
+    const name = document.getElementById('stud-name').value;
+    const sec = document.getElementById('stud-section').value;
+
+    if (!name) {
+        alert("Enter name");
+        return;
+    }
+
+    const res = await fetch("http://localhost:3000/admin/add-user", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            username: name,
+            password: "123",
+            role: "student",
+            section: sec
+        })
+    });
+
+    const data = await res.json();
+    alert(data.msg);
+
+    loadStudents();
+}
+async function loadStudents() {
+    const res = await fetch("http://localhost:3000/students");
+    const students = await res.json();
+
+    document.getElementById('student-list').innerHTML =
+        students.map(s => `
+            <tr>
+                <td>${s.username}</td>
+                <td>${s.section || "-"}</td>
+                <td>-</td>
+                <td>
+                    <button onclick="deleteUser('${s._id}')">Delete</button>
+                </td>
+            </tr>
+        `).join("");
+}
+async function deleteUser(id) {
+    await fetch(`http://localhost:3000/admin/delete-user/${id}`, {
+        method: "DELETE"
+    });
+
+    alert("Deleted");
+
+    loadFaculty();
+    loadStudents();
+}
+    async function loadPendingMarks() {
+    const response = await fetch("http://localhost:3000/hod/pending-marks");
+    const students = await response.json();
+    
+    const tableBody = document.getElementById("hod-table-body");
+    tableBody.innerHTML = "";
+
+    students.forEach(student => {
+        student.marks.forEach(mark => {
+            if (mark.status === "Pending") {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${student.username}</td>
+                        <td>${mark.subject}</td>
+                        <td>${mark.mid1}</td>
+                        <td>
+                            <button onclick="approve('${student.username}', '${mark.subject}')">Approve</button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    });
+}
+
+async function approve(user, sub) {
+    await fetch("http://localhost:3000/hod/approve-mark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: user, subject: sub })
+    });
+    alert("Approved!");
+    loadPendingMarks(); // Refresh table
+}
+
+    // --- Logic: Broadcasts ---
+    function sendBroadcast() {
+        const target = document.getElementById('notif-target').value;
+        const content = document.getElementById('notif-content').value;
+        if(content) {
+            broadcasts.unshift({
+                id: Date.now(),
+                target,
+                content,
+                time: new Date().toLocaleTimeString()
+            });
+            document.getElementById('notif-content').value = '';
+            showToast(`Alert sent to ${target}`);
+            renderAll();
+        }
+    }
+
+    // --- Logic: Submissions ---
+    function processAction(id, decision) {
+        const idx = faculty.findIndex(f => f.id === id);
+        const item = faculty.splice(idx, 1)[0];
+        item.status = decision;
+        archive.push(item);
+        showToast(`Marks ${decision}`);
+        renderAll();
+    }
+
+    // --- Rendering ---
+    function renderAll() {
+        // Stats
+        document.getElementById('stat-students').innerText = students.length;
+        document.getElementById('stat-faculty').innerText = faculty.length;
+        document.getElementById('stat-pending').innerText = faculty.filter(f => f.status === 'Pending').length;
+
+        // Dashboard
+        document.getElementById('dash-body').innerHTML = faculty.concat(archive).map(f => `
+            <tr><td>${f.name}</td><td>${f.subject}</td>
+            <td><span class="badge bg-${f.status.toLowerCase()}">${f.status}</span></td></tr>
+        `).join('');
+
+        // Faculty
+        document.getElementById('faculty-list').innerHTML = faculty.map(f => `
+            <tr><td>${f.name}</td><td>${f.subject}</td>
+            <td><button class="btn btn-delete" onclick="faculty=faculty.filter(i=>i.id!=${f.id});renderAll()">Remove</button></td></tr>
+        `).join('');
+
+        // Students Filter
+        const filter = document.getElementById('view-section-filter').value;
+        const filteredStudents = filter === 'All' ? students : students.filter(s => s.section === filter);
+
+        document.getElementById('student-list').innerHTML = filteredStudents.map(s => `
+            <tr><td>${s.name}</td><td><span class="badge bg-info">${s.section}</span></td>
+            <td><strong>${s.marks}</strong></td>
+            <td><button class="btn btn-delete" onclick="students=students.filter(i=>i.id!=${s.id});renderAll()">Delete</button></td></tr>
+        `).join('');
+
+        // Submissions
+        document.getElementById('submission-list').innerHTML = faculty.filter(f => f.status === 'Submitted').map(f => `
+            <tr><td>${f.name}</td><td>${f.subject}</td>
+            <td>
+                <button class="btn btn-approve" onclick="processAction(${f.id}, 'Approved')">Approve</button>
+                <button class="btn btn-reject" onclick="processAction(${f.id}, 'Rejected')">Reject</button>
+            </td></tr>
+        `).join('');
+
+        // Broadcast History
+        document.getElementById('notif-history').innerHTML = broadcasts.map(b => `
+            <div class="notification-item">
+                <strong>To: ${b.target}</strong> <small style="float:right">${b.time}</small>
+                <p>${b.content}</p>
+            </div>
+        `).join('');
+
+        // Reports
+        document.getElementById('report-body').innerHTML = students.map(s => `
+            <tr><td>${s.name}</td><td>${s.section}</td><td>${s.marks}</td>
+            <td><span class="badge ${s.marks >= 25 ? 'bg-submitted' : 'bg-rejected'}">${s.marks >= 25 ? 'Pass' : 'Fail'}</span></td></tr>
+        `).join('');
+    }
+
+    // --- Analytics ---
+    let myChart = null;
+    function updateChart() {
+        const pass = students.filter(s => s.marks >= 25).length;
+        const fail = students.length - pass;
+        const ctx = document.getElementById('passChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pass', 'Fail'],
+                datasets: [{ data: [pass, fail], backgroundColor: ['#27ae60', '#e74c3c'] }]
+            }
+        });
+    }
+
+    function downloadCSV() {
+        let csv = 'Name,Section,Marks,Status\n';
+        students.forEach(s => csv += `${s.name},${s.section},${s.marks},${s.marks >= 25 ? 'Pass' : 'Fail'}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Full_Department_Report.csv`;
+        a.click();
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+     function logout() {
+            if (confirm("Are you sure you want to logout?")) {
+                window.location.href = "login.html"; // Redirects to your login page
+            }
+        }
+        window.onload = () => {
+    loadFaculty();
+    loadStudents();
+};
+
+
+    renderAll();
+</script>
+
+</body>
+</html>

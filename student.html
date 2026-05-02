@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro-Student Portal | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary: #64748b;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent: #10b981;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .dark-mode {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text-main);
+            transition: background 0.3s ease, color 0.3s ease;
+            line-height: 1.5;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            background: var(--card);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-brand { font-size: 1.25rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+        .nav-actions { display: flex; gap: 1rem; align-items: center; }
+
+        /* --- BUTTONS --- */
+        button {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: var(--bg); }
+
+        /* --- LAYOUT --- */
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .avatar {
+            width: 64px; height: 64px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold;
+        }
+
+        /* --- MODULE GRID --- */
+        .search-container { position: relative; margin-bottom: 2rem; }
+        .search-bar {
+            width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: 12px;
+            border: 1px solid var(--border); background: var(--card);
+            color: var(--text-main); font-size: 1rem; box-sizing: border-box;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .module-card {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .module-card:hover { transform: translateY(-4px); border-color: var(--primary); }
+        .module-card i { font-size: 2.5rem; display: block; margin-bottom: 1rem; font-style: normal; }
+
+        /* --- SECTIONS --- */
+        .section { display: none; background: var(--card); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .section.active { display: block; animation: slideUp 0.3s ease-out; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+        th { text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        td { padding: 1rem; border-bottom: 1px solid var(--border); }
+
+        .progress-track { background: var(--border); border-radius: 20px; height: 10px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { background: var(--accent); height: 100%; transition: width 0.8s ease; }
+
+        #notify-dropdown {
+            position: absolute; top: 70px; right: 2rem; width: 320px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; box-shadow: var(--shadow); display: none; z-index: 1001;
+        }
+
+        .notif-item { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .notif-item:last-child { border: none; }
+
+        .back-btn { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; color: var(--primary); font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-brand">EduPortal.io</div>
+    <div class="nav-actions">
+        <button class="btn-outline" onclick="toggleNotifications()">🔔 <span id="notif-badge">3</span></button>
+        <button class="btn-outline" onclick="toggleTheme()">🌓</button>
+        <button class="btn-primary" onclick="handleLogout()">Logout</button>
+    </div>
+</nav>
+
+<div id="notify-dropdown">
+    <div style="padding: 1rem; font-weight: bold; border-bottom: 1px solid var(--border);">Recent Updates</div>
+    <div class="notif-item">🚩 <b>Attendance Alert:</b> Physics is below 75%</div>
+    <div class="notif-item">📅 <b>Exam Cell:</b> Mid-term marks uploaded</div>
+    <div class="notif-item">💳 <b>Finance:</b> Tuition fee receipt generated</div>
+</div>
+
+<div class="container">
+    <div class="profile-card">
+        <div class="avatar">JS</div>
+        <div style="flex-grow: 1;">
+            <h2 style="margin: 0; font-size: 1.5rem;">student01</h2>
+            <p style="margin: 0.25rem 0 0; color: var(--text-muted);">B.Tech Computer Science • Semester IV</p>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Current CGPA</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">8.42</div>
+        </div>
+    </div>
+
+    <div id="view-menu">
+        <div class="search-container">
+            <input type="text" class="search-bar" id="moduleSearch" placeholder="Search for modules, tools, or documents..." onkeyup="handleSearch()">
+        </div>
+        <div class="grid">
+            <div class="module-card" onclick="navigateTo('attendance')"><i>📊</i>Attendance</div>
+            <div class="module-card" onclick="navigateTo('results')"><i>🏆</i>Mid Marks</div>
+            <div class="module-card" onclick="navigateTo('timetable')"><i>📅</i>Time Table</div>
+            <div class="module-card" onclick="navigateTo('finance')"><i>💳</i>Finance</div>
+        </div>
+    </div>
+
+    <div id="attendance" class="section">
+        <div class="back-btn" onclick="navigateTo('menu')">← Back to Dashboard</div>
+        <h3>Attendance Insights</h3>
+</div>
+        <div id="attendance-list"></div>
+        <div style="margin-bottom:20px;">
+</div>
+    </div>
+
+    <div id="results" class="section">
+        <div class="back-btn" onclick="navigateTo('menu')">← Back to Dashboard</div>
+        <h3>Mid-Term Performance</h3>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Comparing Mid-1 and Mid-2 (Max: 30 Marks)</p>
+        <div style="position: relative; height:350px; width:100%; margin-bottom: 2rem;">
+            <canvas id="marksChart"></canvas>
+        </div>
+        <table id="marksTable">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Mid 1</th>
+                    <th>Mid 2</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="marksBody"></tbody>
+        </table>
+    </div>
+
+    <div id="timetable" class="section">
+        <div class="back-btn" onclick="navigateTo('menu')">← Back to Dashboard</div>
+        <h3>Class Schedule</h3>
+        <div style="overflow-x: auto;">
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="finance" class="section">
+        <div class="back-btn" onclick="navigateTo('menu')">← Back to Dashboard</div>
+        <h3>Fee Details</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+            <div class="module-card" style="flex: 1; text-align: left; cursor: default;">
+                <span style="color: var(--text-muted);">Academic Fee</span>
+                <h2 id="balance-amt" style="margin: 0.5rem 0;">₹12,500</h2>
+                <button class="btn-primary" id="payBtn" onclick="processPayment()">Pay Now</button>
+            </div>
+            <div class="module-card" style="flex: 1; text-align: left; cursor: default;">
+                <span style="color: var(--text-muted);">Exam Fee</span>
+                <h2 style="margin: 0.5rem 0;">₹0.00</h2>
+                <span style="color: var(--accent); font-weight: bold;">✔ Cleared</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let studentId = localStorage.getItem("studentId");
+
+let marksChartInstance = null;
+
+/* --- CORE LOGIC --- */
+function navigateTo(id) {
+    document.getElementById('view-menu').style.display = 'none';
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+    if (id === 'menu') {
+        document.getElementById('view-menu').style.display = 'block';
+        return;
+    }
+
+    const target = document.getElementById(id);
+    target.classList.add('active');
+
+    if (id === 'attendance') renderAttendance();
+    if (id === 'results') renderMarks();
+    if (id === 'timetable') renderSchedule();
+}
+
+/* --- VIEW ONLY ATTENDANCE --- */
+function renderAttendance() {
+    fetch("http://localhost:3000/attendance")
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('attendance-list');
+
+            list.innerHTML = data.map(item => `
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>${item.name}</span>
+                        <span style="color:${item.val < 75 ? 'red' : 'green'}">
+                            ${item.val}%
+                        </span>
+                    </div>
+
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width:${item.val}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(() => {
+            document.getElementById('attendance-list').innerHTML = "No attendance data";
+        });
+}
+async function loadMyMarks() {
+    const user = localStorage.getItem("username");
+    const response = await fetch(`http://localhost:3000/view-marks/${user}`);
+    const marks = await response.json();
+    
+    // Now map this data to your table rows
+    const tableBody = document.getElementById("marks-table-body");
+    tableBody.innerHTML = marks.map(m => `
+        <tr><td>${m.subject}</td><td>${m.mid1}</td><td>${m.mid2}</td></tr>
+    `).join('');
+}
+
+/* --- VIEW ONLY MARKS --- */
+function renderMarks() {
+    fetch("http://localhost:3000/marks")
+        .then(res => res.json())
+        .then(data => {
+
+            const body = document.getElementById('marksBody');
+
+            body.innerHTML = data.map(m => `
+                <tr>
+                    <td><b>${m.subject}</b></td>
+                    <td>${m.m1}</td>
+                    <td>${m.m2}</td>
+                    <td style="color:green;">Pass</td>
+                </tr>
+            `).join('');
+
+            const ctx = document.getElementById('marksChart').getContext('2d');
+
+            if (window.chart) window.chart.destroy();
+
+            window.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(x => x.subject),
+                    datasets: [
+                        {
+                            label: 'Mid 1',
+                            data: data.map(x => x.m1),
+                        },
+                        {
+                            label: 'Mid 2',
+                            data: data.map(x => x.m2),
+                        }
+                    ]
+                }
+            });
+        })
+        .catch(() => {
+            document.getElementById('marksBody').innerHTML = "<tr><td colspan='4'>No marks data</td></tr>";
+        });
+}
+
+/* --- TIMETABLE (STATIC SAFE) --- */
+function renderSchedule() {
+    const body = document.getElementById('scheduleBody');
+
+    const schedule = [
+        ["9:00", "Math", "Physics", "Chemistry", "English", "Lab"],
+        ["10:00", "Physics", "Math", "English", "Chemistry", "Lab"],
+        ["11:00", "Break", "Break", "Break", "Break", "Break"],
+        ["12:00", "Lab", "Math", "Physics", "English", "Chemistry"]
+    ];
+
+    body.innerHTML = schedule.map(row => `
+        <tr>
+            ${row.map(cell => `<td>${cell}</td>`).join('')}
+        </tr>
+    `).join('');
+}
+
+/* --- UTILS --- */
+function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('portal-theme', isDark ? 'dark' : 'light');
+}
+
+if (localStorage.getItem('portal-theme') === 'dark') {
+    document.body.classList.add('dark-mode');
+}
+
+function toggleNotifications() {
+    const drop = document.getElementById('notify-dropdown');
+    drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
+}
+
+function handleSearch() {
+    const query = document.getElementById('moduleSearch').value.toLowerCase();
+    document.querySelectorAll('.module-card').forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(query) ? 'block' : 'none';
+    });
+}
+
+function processPayment() {
+    const btn = document.getElementById('payBtn');
+    btn.innerText = "Processing...";
+    setTimeout(() => {
+        document.getElementById('balance-amt').innerText = "₹0.00";
+        btn.innerHTML = "✔ Paid";
+        btn.disabled = true;
+    }, 1500);
+}
+
+function handleLogout() {
+    if (confirm("Logout?")) window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

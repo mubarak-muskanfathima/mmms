@@ -84,7 +84,8 @@ app.get("/students", async (req, res) => {
         const students = await User.find({ role: "student" });
         res.json(students);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json({ error: "Server Error" });
     }
 });
 

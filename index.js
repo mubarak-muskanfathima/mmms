@@ -2,14 +2,15 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
+require('dotenv').config();
 const app = express();
-const port=process.env.PORT || 4000;
 app.use(cors());
 app.use(bodyParser.json());
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running"));
 
 // 1. Connect to MongoDB (Local or Atlas)
-mongoose.connect('mongodb://localhost:27017/mmms')
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB Connected"))
     .catch(err => console.error("❌ Connection Error:", err));
 

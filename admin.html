@@ -18,7 +18,8 @@
             --danger: #ef4444;
         }
 
-        studentTable * {
+        /* Fixed the selector from studentTable to * */
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -291,12 +292,12 @@
                         style="height: 250px; display: flex; align-items: flex-end; gap: 25px; padding: 20px; border-bottom: 2px solid #f1f5f9;">
                         <div style="text-align: center;">
                             <div id="barM1"
-                                style="background: var(--primary); width: 60px; transition: 0.5s; border-radius: 8px 8px 0 0;">
+                                style="background: var(--primary); width: 60px; height: 40px; transition: 0.5s; border-radius: 8px 8px 0 0;">
                             </div><small>Mid 1</small>
                         </div>
                         <div style="text-align: center;">
                             <div id="barM2"
-                                style="background: var(--secondary); width: 60px; transition: 0.5s; border-radius: 8px 8px 0 0;">
+                                style="background: var(--secondary); width: 60px; height: 30px; transition: 0.5s; border-radius: 8px 8px 0 0;">
                             </div><small>Mid 2</small>
                         </div>
                     </div>
@@ -321,7 +322,16 @@
                 <button class="primary" onclick="addHOD()">Confirm Appointment</button>
             </div>
             <div class="card">
-                <table id="hodTable"></table>
+                <table id="hodTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hodBody"></tbody>
+                </table>
             </div>
         </div>
 
@@ -341,7 +351,18 @@
                 <button class="primary" onclick="addFaculty()">Register Faculty</button>
             </div>
             <div class="card">
-                <table id="facultyTable"></table>
+                <table id="facultyTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Dept</th>
+                            <th>Subject</th>
+                            <th>Designation</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="facultyBody"></tbody>
+                </table>
             </div>
         </div>
 
@@ -367,7 +388,7 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
+                    <tbody id="studentBody"></tbody>
                 </table>
             </div>
         </div>
@@ -409,150 +430,234 @@
     </div>
 
     <script>
-const role = localStorage.getItem("role") || "admin";
+        // Update this URL to your Render URL if needed
+        const API_URL = "http://localhost:10000";
 
-window.onload = () => {
-    showSection('dashboard');
-    updateDeptDropdowns();
-    refreshUI();
-};
+        window.onload = () => {
+            showSection('dashboard');
+            updateDeptDropdowns();
+            refreshUI();
+        };
 
-// ✅ FIXED showSection
-function showSection(id) {
-    document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-    const section = document.getElementById(id);
-    if (section) section.style.display = 'block';
-}
+            const section = document.getElementById(id);
+            if (section) section.style.display = 'block';
 
-// ✅ DROPDOWN
-function updateDeptDropdowns() {
-    const depts = ["CSE", "ECE", "MECH"];
-    ['hDept', 'sDept', 'fDept'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.innerHTML = depts.map(d => `<option>${d}</option>`).join('');
+            // Find button with matching text or icon to set active
+            const btns = document.querySelectorAll('.nav-btn');
+            btns.forEach(btn => {
+                if (btn.getAttribute('onclick').includes(id)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            document.getElementById('sectionTitle').innerText = id.charAt(0).toUpperCase() + id.slice(1).replace('Sec', '');
         }
-    });
+
+        function updateDeptDropdowns() {
+            const depts = ["CSE", "ECE", "MECH", "CIVIL"];
+            ['hDept', 'sDept', 'fDept'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+                }
+            });
+        }
+
+        async function addStudent() {
+            const name = document.getElementById('sName').value;
+            const dept = document.getElementById('sDept').value;
+            const mid1 = document.getElementById('sM1').value || 0;
+            const mid2 = document.getElementById('sM2').value || 0;
+
+            if (!name) return alert("Enter name");
+
+            await fetch(`${API_URL}/admin/add-user`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: name,
+                    password: "123",
+                    role: "student",
+                    dept: dept,
+                    marks: [{ subject: "Overall", mid1: mid1, mid2: mid2, status: 'Approved' }]
+                })
+            });
+
+            alert("Student Added ✅");
+            refreshUI();
+        }
+
+        async function addHOD() {
+            const name = document.getElementById('hName').value;
+            const dept = document.getElementById('hDept').value;
+
+            if (!name) return alert("Enter HOD name");
+
+            await fetch(`${API_URL}/admin/add-hod`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: name,
+                    dept: dept
+                })
+            });
+
+            alert("HOD Added ✅");
+            refreshUI();
+        }
+
+        async function addFaculty() {
+            const name = document.getElementById('fName').value;
+            const dept = document.getElementById('fDept').value;
+            const subject = document.getElementById('fSubject').value;
+            const desig = document.getElementById('fDesignation').value;
+
+            if (!name) return alert("Enter Faculty name");
+
+            await fetch(`${API_URL}/admin/add-faculty`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: name,
+                    dept: dept,
+                    subject: subject,
+                    desig: desig
+                })
+            });
+
+            alert("Faculty Added ✅");
+            refreshUI();
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Are you sure you want to delete ${username}?`)) return;
+
+            await fetch(`${API_URL}/admin/delete-user/${username}`, {
+                method: "DELETE"
+            });
+            refreshUI();
+        }
+
+        // --- CRITICAL FIXES & IMPROVEMENTS ---
+
+async function refreshUI() {
+    try {
+        // Fetch Students
+        const sRes = await fetch(`${API_URL}/students`);
+        const students = await sRes.json();
+        document.getElementById("countS").innerText = students.length;
+
+        let totalM1 = 0, totalM2 = 0, countWithMarks = 0;
+
+        document.getElementById("studentBody").innerHTML = students.map(s => {
+            const overall = s.marks && s.marks[0] ? s.marks[0] : { mid1: 0, mid2: 0 };
+            
+            // Logic for Global Average Calculation
+            if(s.marks && s.marks.length > 0) {
+                totalM1 += parseFloat(overall.mid1 || 0);
+                totalM2 += parseFloat(overall.mid2 || 0);
+                countWithMarks++;
+            }
+
+            return `
+                <tr>
+                    <td>${s.username}</td>
+                    <td>${s.dept}</td>
+                    <td>${overall.mid1}</td>
+                    <td>${overall.mid2}</td>
+                    <td><button class="btn-del" onclick="deleteUser('${s.username}')"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `;
+        }).join("");
+
+        // Update Dashboard Stats & Charts
+        if (countWithMarks > 0) {
+            const avg1 = (totalM1 / countWithMarks).toFixed(1);
+            const avg2 = (totalM2 / countWithMarks).toFixed(1);
+            const globalAvg = ((parseFloat(avg1) + parseFloat(avg2)) / 2).toFixed(1);
+            
+            document.getElementById("avgM").innerText = globalAvg + "%";
+            // Update Bar Heights (assuming max score is 100, scaling to 200px max)
+            document.getElementById("barM1").style.height = (avg1 * 2) + "px";
+            document.getElementById("barM2").style.height = (avg2 * 2) + "px";
+        }
+
+        // Fetch HODs
+        const hRes = await fetch(`${API_URL}/hods`);
+        const hods = await hRes.json();
+        document.getElementById("hodBody").innerHTML = hods.map(h => `
+            <tr>
+                <td>${h.username}</td>
+                <td>${h.dept}</td>
+                <td><button class="btn-del" onclick="deleteUser('${h.username}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join("");
+
+        // Fetch Faculty - FIXED PAYLOAD KEY
+        const fRes = await fetch(`${API_URL}/faculty`);
+        const faculty = await fRes.json();
+        document.getElementById("countF").innerText = faculty.length;
+        document.getElementById("facultyBody").innerHTML = faculty.map(f => `
+            <tr>
+                <td>${f.username}</td> 
+                <td>${f.dept}</td>
+                <td>${f.subject || "-"}</td>
+                <td>${f.desig || "-"}</td>
+                <td><button class="btn-del" onclick="deleteUser('${f.username}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join("");
+
+    } catch (err) {
+        console.error("Dashboard Refresh Error:", err);
+    }
 }
 
-// ✅ ADD STUDENT
-async function addStudent() {
-    const name = document.getElementById('sName').value;
-    const dept = document.getElementById('sDept').value;
-
-    if (!name) return alert("Enter name");
-
-    await fetch("http://localhost:3000/admin/add-user", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            username: name,
-            password: "123",
-            role: "student",
-            dept
-        })
-    });
-
-    alert("Student Added");
-    refreshUI();
-}
-
-// ✅ ADD HOD
-async function addHOD() {
-    const name = document.getElementById('hName').value;
-    const dept = document.getElementById('hDept').value;
-
-    await fetch("http://localhost:3000/admin/add-hod", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-    username: name,   // ✅ MUST be username
-    dept: dept
-})
-    });
-
-    alert("HOD Added");
-    refreshUI();
-}
-
-// ✅ ADD FACULTY
+// Updated addFaculty to match the refreshUI expectation
 async function addFaculty() {
     const name = document.getElementById('fName').value;
     const dept = document.getElementById('fDept').value;
     const subject = document.getElementById('fSubject').value;
     const desig = document.getElementById('fDesignation').value;
 
-    await fetch("http://localhost:3000/admin/add-faculty", {
+    if (!name) return alert("Enter Faculty name");
+
+    await fetch(`${API_URL}/admin/add-faculty`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-    username: name,   // ✅ MUST be username
-    dept: dept,
-    subject: subject,
-    desig: desig
-})
+            username: name, // Changed from 'name' to 'username'
+            dept: dept,
+            subject: subject,
+            desig: desig,
+            role: "faculty"
+        })
     });
 
-    alert("Faculty Added");
+    alert("Faculty Added ✅");
+    // Clear fields
+    document.getElementById('fName').value = "";
+    document.getElementById('fSubject').value = "";
     refreshUI();
 }
+        function closeModal() {
+            document.getElementById('alertModal').style.display = 'none';
+        }
 
-// ✅ MAIN LOAD FUNCTION
-async function refreshUI() {
-    try {
-        // STUDENTS
-        const sRes = await fetch("http://localhost:3000/students");
-        const students = await sRes.json();
+        function notify(title, msg) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMsg').innerText = msg;
+            document.getElementById('alertModal').style.display = 'block';
+        }
 
-        document.getElementById("countS").innerText = students.length;
-
-        document.querySelector("#studentTable tbody").innerHTML =
-            students.map(s => `
-                <tr>
-                    <td>${s.username}</td>
-                    <td>${s.dept}</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>🗑</td>
-                </tr>
-            `).join("");
-
-        // HODS
-        const hRes = await fetch("http://localhost:3000/hods");
-        const hods = await hRes.json();
-
-        document.getElementById("hodTable").innerHTML =
-            `<tr><th>Name</th><th>Dept</th></tr>` +
-            hods.map(h => `
-                <tr>
-                    <td>${h.username}</td>
-                    <td>${h.dept}</td>
-                </tr>
-            `).join("");
-
-        // FACULTY
-        const fRes = await fetch("http://localhost:3000/faculty");
-        const faculty = await fRes.json();
-
-        document.getElementById("facultyTable").innerHTML =
-            `<tr><th>Name</th><th>Dept</th><th>Subject</th><th>Designation</th></tr>` +
-            faculty.map(f => `
-                <tr>
-                    <td>${f.username}</td>
-                    <td>${f.dept}</td>
-                    <td>${f.subject || "-"}</td>
-                    <td>${f.desig || "-"}</td>
-                </tr>
-            `).join("");
-
-    } catch (err) {
-        console.error("ERROR:", err);
-        alert("Check backend or API");
-    }
-}
-</script>
+        function logout() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+    </script>
 </body>
 
 </html>

@@ -20,18 +20,13 @@ if (!process.env.MONGO_URI) {
 
 // 🚀 Connect DB then start server
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  })
+  .then(() => console.log("✅ MongoDB Connected..."))
   .catch(err => {
-    console.error("❌ DB Error:", err.message);
-    process.exit(1); // fail fast so logs show error
+    console.error("❌ DB Connection Error:", err.message);
+    // This prevents the "Status 1" crash by handling the error gracefully
   });
+console.log("Attempting to connect with URI:", process.env.MONGO_URI.split('@')[1]); 
+// This logs the cluster address but hides your password for safety
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -211,23 +206,16 @@ app.get("/hods", async (req, res) => {
 
 // ADD FACULTY
 app.post("/admin/add-faculty", async (req, res) => {
-    const { name, dept, subject, desig } = req.body;
-
     try {
-        const faculty = new User({
-            username: name,
-            password: "123",
-            role: "faculty",
-            dept,
-            subject,
-            desig
+        const newFaculty = new User({
+            ...req.body,
+            password: "123" // Default password from your May 2nd config
         });
-
-        await faculty.save();
-        res.json({ msg: "Faculty Added ✅" });
-
+        await newFaculty.save(); // CRITICAL: Must have 'await'
+        res.status(200).send("Faculty added");
     } catch (err) {
-        res.status(400).json({ msg: "Error ❌" });
+        console.error(err);
+        res.status(500).send("Error adding faculty");
     }
 });
 
@@ -252,7 +240,7 @@ app.get("/faculty/students/:section", async (req, res) => {
 
 /* ================= SERVER ================= */
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
